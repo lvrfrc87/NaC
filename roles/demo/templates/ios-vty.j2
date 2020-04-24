@@ -1,0 +1,65 @@
+ip ssh version 2
+
+{% if 'con 0' in con_0 -%}
+line con 0
+ logging synchronous
+ {% if 'exec-timeout' in con_0 -%}
+ exec-timeout {{ con.timeout.min }} {{ con.timeout.sec }}
+ {% endif -%}
+ {% if 'ACS' in con_0 -%}
+ login authentication ACS
+ {% elif 'LOGIN-AUTH' in con_0 -%}
+ login authentication LOGIN-AUTH
+ {% endif -%}
+{% endif -%}
+
+{% if 'aux 0' in aux_0 -%}
+line aux 0
+ {% if 'login authentication' in aux_0 -%}
+ no login authentication
+ {% endif -%}
+ no exec
+ {% if 'transport input' in aux_0 -%}
+ transport input none
+ {% endif -%}
+{% endif -%}
+
+{% if 'line vty 0 4' in vty_04 -%}
+line vty 0 4
+ {% if 'password' in vty_04 -%}
+ no password
+ {% endif -%}
+ access-class {{ vty.acl }} in
+ {% if 'exec-timeout' in vty_04 -%}
+ exec-timeout {{ vty.timeout.min }} {{ vty.timeout.sec }}
+ {% endif -%}
+ logging synchronous
+ {% if 'ACS' in vty_04 -%}
+ authorization exec ACS
+ login authentication ACS
+ {% elif 'LOGIN-AUTH' in vty_04 -%}
+ authorization exec LOGIN-AUTH
+ login authentication LOGIN-AUTH
+ {% endif -%}
+ transport input {{ vty.transport }}
+{% endif -%}
+
+{% if 'line vty 5 15' in vty_015 -%}
+line vty 5 15
+ {% if 'password' in vty_015 -%}
+ no password
+ {% endif -%}
+ access-class {{ vty.acl }} in
+ {% if 'exec-timeout' in vty_015 -%}
+ exec-timeout {{ vty.timeout.min }} {{ vty.timeout.sec }}
+ {% endif -%}
+ logging synchronous
+ {% if 'ACS' in vty_015 -%}
+ authorization exec ACS
+ login authentication ACS
+ {% elif 'LOGIN-AUTH' in vty_015 -%}
+ authorization exec LOGIN-AUTH
+ login authentication LOGIN-AUTH
+ {% endif -%}
+ transport input {{ vty.transport }}
+{% endif -%}

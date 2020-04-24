@@ -1,0 +1,16 @@
+---
+- name: ~~CONFIG-CHANGE~~ assert - set empty list for assertion
+  set_fact:
+    assertion_list: []
+  tags:
+    - config_change
+    - ntp
+    - vty
+
+- name: ~~CONFIG-CHANGE~~ assert - update assertion list
+  set_fact:
+    assertion_list: "{{ assertion_list }} + [ '{{ result.changed }}' ]"
+  tags:
+    - config_change
+    - ntp
+    - vty

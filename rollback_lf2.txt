@@ -1,0 +1,66 @@
+no logging buffered 6553555
+no logging vrf mgmt host 10.246.97.233
+no logging vrf mgmt host 10.66.65.39
+no logging vrf mgmt host 10.74.120.238
+no logging vrf mgmt host 10.78.24.26
+no logging vrf mgmt source-interface Management1
+!
+no hostname sp1.arista.ams
+no ip name-server vrf mgmt 10.74.80.42
+no ip domain-name netops.tmcs
+!
+no ntp source Loopback0
+no ntp server vrf mgmt 10.75.32.5
+no ntp server vrf mgmt 10.75.33.5
+!
+no snmp-server community fluffytail ro SNMP
+no snmp-server community tmcpub ro SNMP
+no snmp-server host 10.226.234.116 version 2c fluffytail
+no snmp-server host 10.226.234.116 version 2c tmcpub
+no snmp-server host 10.226.234.117 version 2c fluffytail
+no snmp-server host 10.226.234.117 version 2c tmcpub
+no snmp-server host 10.226.236.4 version 2c fluffytail
+no snmp-server host 10.227.234.116 version 2c fluffytail
+no snmp-server host 10.227.234.116 version 2c tmcpub
+no snmp-server host 10.247.128.200 version 2c fluffytail
+no snmp-server host 10.247.128.200 version 2c tmcpub
+no snmp-server host 10.247.128.215 version 2c fluffytail
+no snmp-server host 10.247.128.215 version 2c tmcpub
+no snmp-server host 10.247.5.196 version 2c fluffytail
+no snmp-server host 10.247.5.196 version 2c tmcpub
+no snmp-server host 10.247.5.202 version 2c fluffytail
+no snmp-server host 10.247.5.202 version 2c tmcpub
+no snmp-server host 10.74.120.238 version 2c tmcpub
+no snmp-server host 10.78.65.127 version 2c tmcpub
+no snmp-server host 10.78.65.18 version 2c tmcpub
+no snmp-server host 29.0.2.100 version 2c tmcpub
+no snmp-server host 29.0.3.100 version 2c tmcpub
+
+interface Ethernet1
+no   description Link-to-p1-Leaf-1
+   no switchport
+no   ip address 10.76.64.0/31
+!
+interface Ethernet2
+no   description Link-to-p1-Leaf-2
+   no switchport
+no   ip address 10.76.64.2/31
+!
+interface Ethernet3
+no   description Link-to-p1-Leaf-3
+no   shutdown
+   no switchport
+no   ip address 10.76.64.4/31
+!
+interface Ethernet4
+no   description Link-to-p1-Leaf-4
+no   shutdown
+   no switchport
+no   ip address 10.76.64.6/31
+!
+interface Loopback0
+no   description eBGP-Overlay-to-leaves
+no   ip address 10.76.64.32/32
+
+
+no ip access-list standard SNMP

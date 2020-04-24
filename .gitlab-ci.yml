@@ -1,0 +1,120 @@
+stages:
+  - awx_check_project
+  - awx_conf_project
+  - awx_check_template
+  - awx_conf_template
+  - syntax_check
+  - staging_test
+  - dev_test
+  - production_deployment
+
+variables:
+  # Just one "BRANCH" and TAG variable is allowed.
+  # Remeber to change them in line with your dev branch
+  BRANCH: "federico_configreplace_dev"
+  TAG: "cfgrpl"
+
+awx_check_project:
+  stage: awx_check_project
+  tags:
+    - netengeu
+  script:
+    - tower-cli project get --name $BRANCH
+  except:
+    - master
+    - staging
+
+awx_config_project:
+  stage: awx_conf_project
+  tags:
+    - netengeu
+  script:
+    - >
+      tower-cli project create --name $BRANCH --scm-type git
+      --scm-url https://git.tmaws.io/federico.olivieri/demo_network_code.git
+      --organization demo --scm-branch $BRANCH --scm-credential gitlab_credentials_demo
+      --scm-update-on-launch True
+    - tower-cli project update --name $BRANCH --monitor
+  when: on_failure
+  except:
+    - master
+    - staging
+
+awx_check_template:
+  stage: awx_check_template
+  tags:
+    - netengeu
+  script:
+    - tower-cli job_template get --name $BRANCH
+  when: always
+  except:
+    - master
+    - staging
+
+awx_config_template:
+  stage: awx_conf_template
+  tags:
+    - netengeu
+  script:
+    - >
+      tower-cli job_template create --name $BRANCH --job-type run
+      --inventory demo_dev --project $BRANCH --playbook dev.yml
+      --vault-credential vault_demo --verbosity verbose --job-tags $TAG
+      --allow-simultaneous True --diff-mode True
+  when: on_failure
+  except:
+    - master
+    - staging
+
+yaml:
+  stage: syntax_check
+  tags:
+    - netengeu
+  script:
+    - yamllint -c /home/gitlab-runner/.config/yamllint/config/yamllint ./
+  except:
+    - master
+  when: always
+
+jinja2:
+  stage: syntax_check
+  tags:
+    - netengeu
+  script:
+    - jinja-ninja roles/demo/templates/
+  except:
+  - master
+  when: always
+
+ansible_run_dev:
+  stage: dev_test
+  tags:
+    - netengeu
+  script:
+    - tower-cli job launch --job-template=$BRANCH --monitor
+  except:
+    - master
+    - staging
+  when: always
+
+ansible_run_staging:
+  stage: staging_test
+  tags:
+    - netengeu
+  script:
+    - tower-cli workflow_job launch --workflow-job-template=demo_staging_WORKFLOW --monitor
+  only:
+    - staging
+  when: always
+
+deployment:
+  stage: production_deployment
+  tags:
+    - netengeu
+  script:
+    - tower-cli job launch --job-template=demo_MASTER --monitor
+    - tower-cli job_template delete --name $BRANCH
+    - tower-cli project delete --name $BRANCH
+  only:
+    - master
+  when: always

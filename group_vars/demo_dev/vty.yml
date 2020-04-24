@@ -1,0 +1,16 @@
+---
+vty:
+  authorization: LOGIN-AUTH
+  authentication: LOGIN-AUTH
+  transport: ssh
+  timeout:
+    min: 10
+    sec: 0
+  acl: VTY-ACCESS
+  acl_line:
+    - "permit 10.0.0.0 0.255.255.255"
+con:
+  authentication: LOGIN-AUTH
+  timeout:
+    min: 10
+    sec: 0

@@ -1,0 +1,244 @@
+---
+- name: ~~CONFIG-CHANGE~~ ntp - remove legacy NTP servers if any
+  ios_ntp:
+    server: "{{ item }}"
+    state: absent
+    provider: "{{ provider }}"
+  loop: "{{ current_ntp_servers }}"
+  when: item not in ntp.servers
+  register: result
+  notify: save config
+  tags:
+    - config_change
+    - ntp
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - ntp
+
+- name: ~~CONFIG-CHANGE~~ ntp - configure new NTP servers
+  ios_ntp:
+    server: "{{ item }}"
+    source_int: "{{ ntp.source }}"
+    logging: true
+    state: present
+    provider: "{{ provider }}"
+  register: result
+  loop: "{{ ntp.servers }}"
+  notify: save config
+  tags:
+    - config_change
+    - ntp
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - ntp
+
+- name: ~~CONFIG-CHANGE~~ ntp - remove legacy NTP authentication if present
+  ios_ntp:
+    auth: true
+    key_id: "{{ current_ntp_key_id }}"
+    auth_key: "{{ current_ntp_key }}"
+    state: absent
+    provider: "{{ provider }}"
+  register: result
+  notify: save config
+  when:
+    - current_ntp_key is defined
+    - current_ntp_key_id is defined
+  tags:
+    - config_change
+    - ntp
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - ntp
+
+- name: ~~CONFIG-CHANGE~~ ntp - set/update NTP ACL with new servers IOS ver 15.
+  ios_config:
+    lines:
+      - permit udp host {{ item }} any eq ntp
+    parents: ip access-list extended NTP_ACL
+    provider: "{{ provider }}"
+  loop: "{{ ntp.servers }}"
+  when:
+    - "'15.' in os_version"
+    - item not in acl_NTP
+  notify: save config
+  tags:
+    - config_change
+    - ntp
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - ntp
+
+- name: ~~CONFIG-CHANGE~~ ntp - remove legacy servers IP from NTP ACL IOS ver 15.
+  ios_config:
+    lines:
+      - no permit udp host {{ item }} any eq ntp
+    parents: ip access-list extended NTP_ACL
+    provider: "{{ provider }}"
+  loop: "{{ current_ntp_servers }}"
+  register: result
+  when:
+    - item not in ntp.servers
+    - item in acl_NTP
+    - "'15.' in os_version"
+  notify: save config
+  tags:
+    - config_change
+    - ntp
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - ntp
+
+- name: ~~CONFIG-CHANGE~~ ntp - set/update NTP ACL with new servers IOS ver 12.
+  ios_config:
+    lines:
+      - access-list 30 permit host {{ item }}
+    provider: "{{ provider }}"
+  loop: "{{ ntp.servers }}"
+  when:
+    - "'12.' in os_version"
+    - item not in acl_30
+  register: result
+  notify: save config
+  tags:
+    - config_change
+    - ntp
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - ntp
+
+- name: ~~CONFIG-CHANGE~~ ntp - remove legacy servers IP from NTP ACL IOS ver 12.
+  ios_config:
+    lines:
+      - no access-list 30 permit host {{ item }}
+    provider: "{{ provider }}"
+  loop: "{{ current_ntp_servers }}"
+  when:
+    - item not in ntp.servers
+    - "'12.' in os_version"
+    - item in acl_30
+  register: result
+  notify: save config
+  tags:
+    - config_change
+    - ntp
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - ntp
+
+- name: ~~CONFIG-CHANGE~~ ntp - set NTP ACL name if not present IOS ver 15.
+  ios_ntp:
+    acl: NTP_ACL
+    provider: "{{ provider }}"
+  register: result
+  when: "'15.' in os_version"
+  notify: save config
+  tags:
+    - config_change
+    - ntp
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - ntp
+
+- name: ~~CONFIG-CHANGE~~ ntp - set NTP ACL name if not present IOS ver 12.
+  ios_ntp:
+    acl: 30
+    provider: "{{ provider }}"
+  register: result
+  when: "'12.' in os_version"
+  notify: save config
+  tags:
+    - config_change
+    - ntp
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - ntp
+
+- name: ~~CONFIG-CHANGE~~ ntp - remove legacy NTPs from ACL "from-tmwan"
+  ios_config:
+    lines:
+      - no permit udp host {{ item }} any eq ntp
+    parents: ip access-list extended from-tmwan
+    provider: "{{ provider }}"
+  register: result
+  loop: "{{ current_ntp_servers }}"
+  when: item not in ntp.servers
+  notify: save config
+  tags:
+    - config_change
+    - ntp
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - ntp
+
+- name: ~~CONFIG-CHANGE~~ ntp - add new NTPs from ACL "from-tmwan"
+  ios_config:
+    lines:
+      - 15 permit udp host {{ item }} any eq ntp
+      - ip access-list resequence from-tmwan 10 10
+    parents: ip access-list extended from-tmwan
+    provider: "{{ provider }}"
+  register: result
+  loop: "{{  ntp.servers }}"
+  when: item not in acl_tmwan
+  notify: save config
+  tags:
+    - config_change
+    - ntp
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - ntp
+
+- name: ~~CONFIG-CHANGE~~ ntp - check assertion idempotency
+  assert:
+    that:
+      - "{{ item }} == false"
+    fail_msg: "One or more task is not idempotent for this router"
+    success_msg: "All good!"
+  loop: "{{ assertion_list }}"
+  when:
+    - second_run is defined
+    - second_run == true
+  tags:
+    - config_change
+    - ntp
+
+- name: ~~POST-CONFIG-CHANGE~~ ntp - check NTP association
+  ios_command:
+    commands:
+      - show ntp association
+    provider: "{{ provider }}"
+  register: ntp_association
+  tags:
+    - post_change_checks
+    - ntp
+
+- name: ~~POST-CONFIG-CHANGE~~ ntp - fail if one or more NTPs are in synch
+  fail:
+    msg: "NTP not in synch"
+  when: "'.INIT.' in ntp_association['stdout'][0] or '0.0.0.0' in ntp_association['stdout'][0]"
+  tags:
+    - post_change_checks
+    - ntp

@@ -1,0 +1,4 @@
+---
+ansible_python_interpreter: "/usr/bin/env python2.7"
+domainName: netops.tmcs
+nameServer: 10.74.80.42

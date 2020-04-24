@@ -1,0 +1,6 @@
+---
+ntp:
+  servers:
+    - 10.75.32.5
+    - 10.75.33.5
+  source: Loopback 0

@@ -1,0 +1,9 @@
+!.gitignore
+!roles/t2c/configurations/placeholder.txt
+bin/
+include/
+lib/
+.Python
+pip-selfcheck.json
+vagrant/.vagrant
+ansible.cfg

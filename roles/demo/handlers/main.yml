@@ -1,0 +1,6 @@
+---
+- name: save config
+  ios_command:
+    commands:
+      - wr
+    provider: "{{ provider }}"

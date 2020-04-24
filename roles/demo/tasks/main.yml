@@ -1,0 +1,26 @@
+---
+- include_tasks: gather_facts.yml
+  tags:
+    - get_facts
+    - pre_change_checks
+    - post_change_checks
+    - syslog
+    - ntp
+    - snmp
+    - vty
+
+- include_tasks: ntp.yml
+  tags:
+    - pre_change_checks
+    - config_change
+    - post_change_checks
+    - get_facts
+    - ntp
+
+- include_tasks: vty.yml
+  tags:
+    - pre_change_checks
+    - config_change
+    - post_change_checks
+    - get_facts
+    - vty

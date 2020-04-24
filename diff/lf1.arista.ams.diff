@@ -1,0 +1,9 @@
+@@ -167,8 +167,6 @@
+    800 permit 10.247.128.224/28
+    810 deny any log 
+ !
+-ip route vrf mgmt 0.0.0.0/0 10.76.34.1 name management-traffic
+-!
+ ip routing
+ ip routing vrf mgmt
+ !

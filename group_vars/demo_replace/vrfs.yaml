@@ -1,0 +1,5 @@
+vrfs:
+  - name: mgmt
+    interface: Management1
+    rd: "42944:1"
+    routing: true

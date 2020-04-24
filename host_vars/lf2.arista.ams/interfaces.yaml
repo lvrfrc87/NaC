@@ -1,0 +1,55 @@
+---
+interfaces:
+  - name: Management1
+    ip: 10.0.2.15/24
+    virt_router_ip: false
+    virt_ip: false
+    description: management
+    mtu: 1500
+    enabled: true
+    switchport: false
+
+  - name: Ethernet1
+    ip: 10.76.64.3/31
+    virt_router_ip: false
+    virt_ip: false
+    description: Link-to-p1-Spine-1
+    mtu: 1500
+    enabled: true
+    switchport: false
+
+  - name: Ethernet2
+    ip: 10.76.64.9/31
+    virt_router_ip: false
+    virt_ip: false
+    description: Link-to-p1-Spine-2
+    mtu: 1500
+    enabled: false
+    switchport: false
+
+  - name: Ethernet3
+    ip: false
+    virt_router_ip: false
+    virt_ip: false
+    description: mlag-peer-link
+    mtu: 1500
+    enabled: true
+    switchport: true
+
+  - name: Ethernet4
+    ip: false
+    virt_router_ip: false
+    virt_ip: false
+    description: mlag-peer-link
+    mtu: 1500
+    enabled: true
+    switchport: true
+
+  - name: loopback0
+    ip: 10.76.64.42/32
+    virt_router_ip: false
+    virt_ip: false
+    description: eBGP-Overlay-to-Spines
+    mtu: false
+    enabled: true
+    switchport: false

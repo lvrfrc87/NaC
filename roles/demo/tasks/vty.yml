@@ -1,0 +1,180 @@
+---
+- name: ~~CONFIG-CHANGE~~ vty - configure VTY ACL
+  ios_config:
+    lines: "{{ item }}"
+    parents: ip access-list standard {{ vty.acl }}
+    provider: "{{ provider }}"
+  register: result
+  loop: "{{ vty.acl_line }}"
+  notify: save config
+  tags:
+    - config_change
+    - vty
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - vty
+
+- name: ~~CONFIG-CHANGE~~ vty - render template for VTY configuration
+  template: >
+    src=ios-vty.j2
+    dest={{ role_path }}/configurations/demo_ios-{{ inventory_hostname }}.cfg
+  register: result
+  tags:
+    - config_change
+    - vty
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - vty
+
+- name: ~~CONFIG-CHANGE~~ vty - push configuration
+  ios_config:
+    src: "{{ role_path }}/configurations/demo_ios-{{ inventory_hostname }}.cfg"
+    provider: "{{ provider }}"
+    match: none
+  when: result.changed
+  register: result
+  notify: save config
+  tags:
+    - config_change
+    - vty
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - vty
+
+- name: ~~CONFIG-CHANGE~~ vty - check VTY 0 4 ACL
+  ios_command:
+    commands:
+      - sh run | section vty 0 4
+    provider: "{{ provider }}"
+  register: post_vty04
+  tags:
+    - post_change_checks
+    - config_change
+    - vty
+
+- name: ~~CONFIG-CHANGE~~ vty - check VTY 5 15 ACL
+  ios_command:
+    commands:
+      - sh run | section vty 5 15
+    provider: "{{ provider }}"
+  register: post_vty515
+  tags:
+    - post_change_checks
+    - config_change
+    - vty
+
+- name: ~~CONFIG-CHANGE~~ vty - remove VTY ACL 22
+  ios_config:
+    lines:
+      - no access-list 22
+    provider: "{{ provider }}"
+  register: result
+  notify: save config
+  when:
+    - "'Standard IP access list 22' in acl_22.stdout[0]"
+    - "'access-class 22 in' not in post_vty04.stdout[0]"
+    - "'access-class 22 in' not in post_vty515.stdout[0]"
+  tags:
+    - config_change
+    - vty
+
+- include_tasks: assert.yml
+  tags:
+    - config_change
+    - vty
+
+- name: ~~CONFIG-CHANGE~~ vty - check assertion idempotency
+  assert:
+    that:
+      - "{{ item }} == false"
+    fail_msg: "Module not idempotent"
+    success_msg: "All good!"
+  loop: "{{ assertion_list }}"
+  when:
+    - second_run is defined
+    - second_run == true
+  tags:
+    - config_change
+    - vty
+
+
+- name: ~~POST-CONFIG-CHANGE~~ vty - check user login
+  ios_command:
+    commands:
+      - show users wide | i prd2204.svc
+    provider: "{{ provider }}"
+  register: user_wide
+  tags:
+    - post_change_checks
+    - vty
+
+- name: ~~POST-CONFIG-CHANGE~~ vty - fail if prd2204.svc not in stdout
+  fail:
+    msg: "User prd2204.svc not in user VTY"
+  when: "'prd2204.svc' not in user_wide['stdout'][0]"
+  tags:
+    - post_change_checks
+    - vty
+
+- name: ~~POST-CONFIG-CHANGE~~ vty - check transport input
+  ios_command:
+    commands:
+      - sh running-config | i transport input
+    provider: "{{ provider }}"
+  register: transport_input
+  tags:
+    - post_change_checks
+    - vty
+
+- name: ~~POST-CONFIG-CHANGE~~ vty - fail if ssh not only transport input
+  fail:
+    msg: "Transport input other than SSH allowed!"
+  when: item[0] in item[1]
+  with_nested:
+    - ['telnet', 'rlogin', 'all']
+    - ["{{ vty_04 }}", "{{ vty_015 }}"]
+  tags:
+    - post_change_checks
+    - vty
+
+- name: ~~POST-CONFIG-CHANGE~~ vty - check SSH version
+  ios_command:
+    commands:
+      - sh ip ssh
+    provider: "{{ provider }}"
+  register: ssh_version
+  tags:
+    - post_change_checks
+    - vty
+
+- name: ~~POST-CONFIG-CHANGE~~ vty - fail if  SSH version != 2.0
+  fail:
+    msg: "SSH version different from 2.0"
+  when: "'version 2.0' not in ssh_version['stdout'][0]"
+  tags:
+    - post_change_checks
+    - vty
+
+- name: ~~POST-CONFIG-CHANGE~~ vty - fail if ACL not configured VTY 0 4
+  fail:
+    msg: "VTY ACL not configured"
+  when: "(vty.acl) not in post_vty04['stdout'][0]"
+  tags:
+    - post_change_checks
+    - vty
+
+- name: ~~POST-CONFIG-CHANGE~~ vty - fail if ACL not configured in VTY 5 15
+  fail:
+    msg: "VTY ACL not configured"
+  when:
+    - "'line vty 5 15' in vty_015"
+    - "(vty.acl) not in post_vty515['stdout'][0]"
+  tags:
+    - post_change_checks
+    - vty

@@ -1,0 +1,195 @@
+---
+############################## NTP ##############################
+- name: ~~PRE-CONFIG-CHANGE~~ ntp - find current NTP servers
+  ios_command:
+    commands:
+      - show run | i ntp server
+    provider: "{{ provider }}"
+  register: run_ntp_server
+  tags:
+    - get_facts
+    - ntp
+
+- name: ~~PRE-CONFIG-CHANGE~~ ntp - set fact for current NTP servers
+  set_fact:
+    ntp_list: "{{ run_ntp_server.stdout_lines[0] }}"
+  tags:
+    - get_facts
+    - ntp
+
+- name: ~~PRE-CONFIG-CHANGE~~ ntp - create empty list "current_ntp_servers"
+  set_fact:
+    current_ntp_servers: []
+  tags:
+    - get_facts
+    - ntp
+
+- name: ~~PRE-CONFIG-CHANGE~~ ntp - update list with current NTP servers IP
+  set_fact:
+    current_ntp_servers: "{{ current_ntp_servers }} + [ '{{ item | ip_filter }}' ]"
+  loop: "{{ ntp_list }}"
+  when:
+    - item in ntp_list
+  tags:
+    - get_facts
+    - ntp
+
+- name: ~~PRE-CONFIG-CHANGE~~ ntp - find current NTP authentication key
+  ios_command:
+    commands:
+      - show run | i ntp authentication-key
+    provider: "{{ provider }}"
+  register: run_ntp_atuh_key
+  tags:
+    - get_facts
+    - ntp
+
+- name: ~~PRE-CONFIG-CHANGE~~ ntp - set facts for NTP authentication key
+  set_fact:
+    current_ntp_key: "{{ run_ntp_atuh_key.stdout[0].split()[4] }}"
+  when: "'ntp' in run_ntp_atuh_key['stdout'][0]"
+  tags:
+    - get_facts
+    - ntp
+
+- name: ~~PRE-CONFIG-CHANGE~~ ntp - set facts for  NTP key ID
+  set_fact:
+    current_ntp_key_id: "{{ run_ntp_atuh_key.stdout[0].split()[2] }}"
+  when: "'ntp' in run_ntp_atuh_key['stdout'][0]"
+  tags:
+    - get_facts
+    - ntp
+
+- name: ~~PRE-CONFIG-CHANGE~~ ntp - find ACL "NTP_ACL" entries for IOS ver 15.x
+  ios_command:
+    commands:
+      - sh ip access-lists NTP_ACL
+    provider: "{{ provider }}"
+  register: run_acl_NTP
+  tags:
+    - get_facts
+    - ntp
+
+- name: ~~PRE-CONFIG-CHANGE~~ ntp - set facts for "NTP_ACL" IOS ver 15.x
+  set_fact:
+    acl_NTP: "{{ run_acl_NTP.stdout[0] }}"
+  tags:
+    - get_facts
+    - ntp
+
+- name: ~~PRE-CONFIG-CHANGE~~ ntp - find ACL "30" entries for IOS ver 12.x
+  ios_command:
+    commands:
+      - sh access-lists 30
+    provider: "{{ provider }}"
+  register: run_acl_30
+  tags:
+    - get_facts
+    - ntp
+
+- name: ~~PRE-CONFIG-CHANGE~~ ntp - set facts for ACL "30" for IOS ver 12.x
+  set_fact:
+    acl_30: "{{ run_acl_30.stdout[0] }}"
+  tags:
+    - get_facts
+    - ntp
+
+- name: ~~PRE-CONFIG-CHANGE~~ ntp - find ACL "from-tmwan" entries
+  ios_command:
+    commands:
+      - sh access-lists from-tmwan
+    provider: "{{ provider }}"
+  register: run_acl_tmwan
+  tags:
+    - get_facts
+    - ntp
+
+- name: ~~PRE-CONFIG-CHANGE~~ ntp - set facts for ACL "from-tmwan" (stdout)
+  set_fact:
+    acl_tmwan: "{{ run_acl_tmwan.stdout[0] }}"
+  tags:
+    - get_facts
+    - ntp
+
+############################## VTY ##############################
+- name: ~~PRE-CONFIG-CHANGE~~ vty - show ACL 22
+  ios_command:
+    commands:
+      - sh access-list 22
+    provider: "{{ provider }}"
+  register: acl_22
+  tags:
+    - get_facts
+    - vty
+
+- name: ~~PRE-CONFIG-CHANGE~~ vty - show line AUX 0
+  ios_command:
+    commands:
+      - show running-config | section aux 0
+    provider: "{{ provider }}"
+  register: sh_aux_0
+  tags:
+    - get_facts
+    - vty
+
+- name: ~~PRE-CONFIG-CHANGE~~ vty - set AUX variable
+  set_fact:
+    aux_0: "{{ sh_aux_0.stdout[0] }}"
+  tags:
+    - get_facts
+    - vty
+
+- name: ~~PRE-CONFIG-CHANGE~~ vty - show line CON 0
+  ios_command:
+    commands:
+      - show running-config | section con 0
+    provider: "{{ provider }}"
+  register: sh_con_0
+  tags:
+    - get_facts
+    - vty
+
+- name: ~~PRE-CONFIG-CHANGE~~ vty - set CON variable
+  set_fact:
+    con_0: "{{ sh_con_0.stdout[0] }}"
+  tags:
+    - get_facts
+    - vty
+
+- name: ~~PRE-CONFIG-CHANGE~~ vty - show line VTY 0 4
+  ios_command:
+    commands:
+      - sh run | section vty 0 4
+    provider: "{{ provider }}"
+  register: sh_vty_04
+  tags:
+    - get_facts
+    - post_change_checks
+    - vty
+
+- name: ~~PRE-CONFIG-CHANGE~~ vty - set VTY 0 4 variable
+  set_fact:
+    vty_04: "{{ sh_vty_04.stdout[0] }}"
+  tags:
+    - get_facts
+    - post_change_checks
+    - vty
+
+- name: ~~PRE-CONFIG-CHANGE~~ vty - show line VTY 5 15
+  ios_command:
+    commands:
+      - show running-config | section vty 5 15
+    provider: "{{ provider }}"
+  register: sh_vty_015
+  tags:
+    - get_facts
+    - post_change_checks
+    - vty
+
+- name: ~~PRE-CONFIG-CHANGE~~ vty - set VTY 5 15 variable
+  set_fact:
+    vty_015: "{{ sh_vty_015.stdout[0] }}"
+  tags:
+    - get_facts
+    - post_change_checks
+    - vty

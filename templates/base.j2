@@ -1,0 +1,290 @@
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+logging buffered 6553555
+{% for server in syslog -%}
+logging vrf mgmt host {{ server }}
+{% endfor -%}
+logging vrf mgmt source-interface Management1
+!
+hostname {{ inventory_hostname }}
+ip name-server vrf mgmt {{ nameServer }}
+ip domain-name {{ domainName }}
+!
+ntp authentication-key 10 md5 7 {{ ntp.md5 }}
+ntp trusted-key 10
+ntp authenticate
+{% for server in ntp.server -%}
+ntp server vrf mgmt {{ server }}
+{% endfor -%}
+!
+{% for community in snmpCommunities -%}
+snmp-server community {{ community }} ro SNMP
+{% endfor -%}
+{% for server in snmp -%}
+snmp-server host {{ server.ip }} version {{ server.version }} {{ server.community }}
+{% endfor -%}
+!
+spanning-tree mode {{ spanning_tree.mode }}
+{% if spanning_tree.vlan -%}
+{% for vlan in spanning_tree.vlan -%}
+{% if vlan.active == false -%}
+no spanning-tree vlan {{ vlan.id }}
+{% endif -%}
+{% if vlan.priority -%}
+spanning-tree vlan {{ vlan.id }} priority {{ vlan.priority }}
+{% endif -%}
+{% endfor -%}
+{% endif -%}
+!
+tacacs-server key 7 {{ tacacs.key }}
+{% for server in tacacs.servers -%}
+tacacs-server host {{ server }} vrf mgmt
+{% endfor -%}
+!
+aaa authentication login default group tacacs+ local
+aaa authentication enable default group tacacs+ local
+aaa authorization exec default group tacacs+
+!
+no aaa root
+!
+username admin privilege 15 role admin secret sha512 $6$mZQaCXBWiPgMIYcY$T/vUN5ydS6aOhcCTtw5RJO6yv7qcvpDttxd96d2iAVpbbdwbQ7sB05meyXpXebeb4Ge4P/nBS1b.2bKgCFA/X0
+!
+{% if vlans -%}
+{% for vlan in vlans -%}
+vlan {{ vlan.id }}
+    name {{ vlan.name }}
+    {% if vlan.trunk != false -%}
+    trunk group {{ vlan.trunk }}
+    {% endif -%}
+!
+{% endfor -%}
+{% endif -%}
+{% for vrf in vrfs%}
+vrf definition {{ vrf.name }}
+{% if vrf.rd != false -%}
+rd {{ vrf.rd }}
+{% endif -%}
+!
+{% endfor -%}
+{% if port_channels -%}
+{% for po in port_channels -%}
+interface {{ po.interface }}
+  {% if po.mlag != false -%}
+  mlag {{ po.mlag }}
+  {% endif -%}
+  {% if po.mode == 'access' -%}
+  {% for vlan in po.vlan %}
+  switchport access vlan {{ vlan }}
+  {% endfor -%}
+  {% elif po.mode == 'trunk' -%}
+  switchport mode trunk
+  {% endif -%}
+  {% if po.trunk_group -%}
+  {% for group in po.trunk_group -%}
+  switchport trunk group {{ group }}
+  {% endfor -%}
+  {% endif -%}
+  {% if po.description != false -%}
+  description {{ po.description }}
+  {% endif -%}
+  {% if po.members -%}
+  {% for group in po.members -%}
+  interface {{ group }}
+  channel-group {{ po.interface|replace("Port-Channel", "") }} mode {{ po.po_mode }}
+  {% endfor -%}
+  {% endif -%}
+  {% endfor -%}
+  {% endif -%}
+  !
+{% if "leaf" in inventory_hostname -%}
+interface Recirc-Channel1
+   no switchport
+   switchport recirculation features vxlan
+!
+{% endif -%}
+{% for iface in interfaces -%}
+interface {{ iface.name }}
+  {% if 'Management' in iface.name -%}
+  vrf forwarding mgmt
+  {% endif -%}
+  {% if iface.ip != false -%}
+  ip address {{ iface.ip }}
+  {% endif -%}
+  {% if iface.virt_router_ip != false -%}
+  ip virtual-router address {{ iface.virt_router_ip }}
+  {% endif -%}
+  {% if iface.virt_ip != false -%}
+  ip address virtual {{ iface.virt_ip }}
+  {% endif -%}
+  {% if 'loopback' not in iface.name -%}
+  mtu {{ iface.mtu }}
+  {% endif -%}
+  {% if iface.description != false -%}
+  description {{ iface.description }}
+  {% endif -%}
+  {% if 'Ethernet' in iface.name -%}
+  {% if iface.switchport == false -%}
+    no switchport
+  {% elif iface.switchport == true -%}
+    switchport
+  {% endif -%}
+  {% endif -%}
+  {% if iface.enabled == true -%}
+    no shutdown
+  {% elif iface.enabled== false -%}
+    shutdown
+  {% endif -%}
+!
+{% endfor -%}
+{% if vxlan -%}
+{% for vxlan in vxlan -%}
+interface {{ vxlan.interface }}
+  vxlan source-interface {{ vxlan.source_update }}
+  vxlan udp-port {{ vxlan.port }}
+  {% for i in vxlan.vlan_vni -%}
+  {% for vlan, vni in i.items() %}
+  vxlan vlan {{ vlan }} vni {{ vni }}
+  {% endfor -%}
+  {% endfor -%}
+  {% for i in vxlan.vrf_vni -%}
+  {% for vrf, vni in i.items() %}
+  vxlan vrf {{ vrf }} vni {{ vni }}
+  {% endfor -%}
+  {% endfor -%}
+!
+{% endfor -%}
+{% endif -%}
+{% if virtual_mac -%}
+ip virtual-router mac-address {{ virtual_mac }}
+{% endif -%}
+!
+{% for rule in acls -%}
+{% for aclName in rule.keys() -%}
+ip access-list standard {{ aclName|upper }}
+    {% for ip in rule.values() -%}
+    {% for entry in ip -%}
+    {% if 'remark' in entry -%}
+    {{ entry }}
+    {% else -%}
+    permit {{ entry }}
+    {% endif -%}
+    {% endfor -%}
+    {% endfor -%}
+{% endfor -%}
+    deny any log
+{% endfor -%}
+!
+ip route vrf mgmt 0.0.0.0/0 10.76.34.1 name management-traffic
+!
+ip routing
+{% for vrf in vrfs -%}
+{% if vrf.routing == true -%}
+ip routing vrf {{ vrf.name }}
+{% endif -%}
+{% endfor -%}
+!
+ip ssh client source-interface Management1
+!
+router bgp {{ bgp.ASN }}
+maximum-paths 4 ecmp 4
+{% if bgp.redistribute -%}
+redistribute {{ bgp.redistribute }}
+{% endif -%}
+{% for peer in bgp.peerGroups -%}
+neighbor {{ peer.name }} peer-group
+neighbor {{ peer.name }} remote-as {{ peer.remoteAs }}
+neighbor {{ peer.name }} maximum-routes {{ peer.attributes.maxRoutes }} warning-only
+{% if peer.attributes.updateSource -%}
+neighbor {{ peer.name }} update-source {{ peer.attributes.updateSource }}
+{% endif -%}
+{% if peer.attributes.ebgpMultihop -%}
+neighbor {{ peer.name }} ebgp-multihop {{ peer.attributes.ebgpMultihop }}
+{% endif -%}
+{% if peer.attributes.nextHopUnchanged -%}
+neighbor {{ peer.name }} next-hop-unchanged
+{% endif -%}
+{% if peer.attributes.nextHopSelf -%}
+neighbor {{ peer.name }} next-hop-self
+{% endif -%}
+{% if peer.attributes.communityExtended -%}
+neighbor {{ peer.name }} send-community extended
+{% endif -%}
+{% if peer.attributes.allowasIn -%}
+neighbor {{ peer.name }} allowas-in {{ peer.attributes.allowasIn }}
+{% endif -%}
+{% for ip in peer.ip -%}
+neighbor {{ ip }} peer-group {{ peer.name }}
+{% endfor -%}
+{% endfor -%}
+!
+{% for vlan in vlans -%}
+{% if vlan.bgp.enabled == true -%}
+vlan {{ vlan.id }}
+rd {{ vlan.bgp.rd }}
+route-target both {{ vlan.bgp.rt }}
+{% for redist in vlan.bgp.redistribute -%}
+redistribute {{ redist }}
+{% endfor -%}
+{% endif -%}
+!
+{% endfor -%}
+address-family ipv4
+{% for peer in bgp.peerGroups -%}
+{% if peer.af.ipv4 == true -%}
+neighbor {{ peer.name }} activate
+{% elif peer.af.ipv4 == false -%}
+no neighbor {{ peer.name }} activate
+{% endif -%}
+{% endfor -%}
+{% for net in bgp.addressFamily.ipv4.network -%}
+network {{ net }}
+{% endfor -%}
+!
+address-family evpn
+{% for peer in bgp.peerGroups -%}
+{% if peer.af.evpn == true -%}
+neighbor {{ peer.name }} activate
+{% elif peer.af.evpn == false -%}
+no neighbor {{ peer.name }} activate
+{% endif -%}
+{% endfor -%}
+!
+{% for vrf in vrfs -%}
+{% if vrf.bgp.enabled == true -%}
+vrf {{ vrf.name }}
+rd {{ vrf.rd }}
+{% for rti in vrf.bgp.rt_import -%}
+route-target import {{ rti }}
+{% endfor -%}
+{% for rte in vrf.bgp.rt_export -%}
+route-target export {{ rte }}
+{% endfor -%}
+{% for net in vrf.bgp.network -%}
+network {{ net }}
+{% endfor -%}
+{% if vrf.bgp.redistribute -%}
+{% for redist in vrf.bgp.redistribute -%}
+redistribute {{ redist }}
+{% endfor -%}
+{% endif -%}
+{% endif -%}
+!
+{% endfor -%}
+management api http-commands
+   protocol http
+   no shutdown
+   !
+   vrf mgmt
+        no shutdown
+!
+management ssh
+   idle-timeout 15
+   authentication mode password
+   ip access-group ADMIN vrf mgmt in
+   !
+   vrf mgmt
+      no shutdown
+!
+end

@@ -1,0 +1,25 @@
+---
+bgp:
+  ASN: 65083
+  redistribute:
+  addressFamily:
+    ipv4:
+      network:
+        - 10.76.64.43/32
+
+  peerGroups:
+    - name: SPINE-Underlay
+      remoteAs: 65082
+      ip:
+        - 10.76.64.0
+        - 10.76.64.8
+      attributes:
+        updateSource:
+        ebgpMultihop:
+        nextHopUnchanged:
+        nextHopSelf:
+        communityExtended: true
+        maxRoutes: 12000
+        allowasIn: 3
+      af:
+        ipv4: true

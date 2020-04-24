@@ -1,0 +1,55 @@
+---
+interfaces:
+  - name: Management1
+    ip: 10.0.2.15/24
+    virt_router_ip: false
+    virt_ip: false
+    description: management
+    mtu: 1500
+    enabled: true
+    switchport: false
+
+  - name: Ethernet1
+    ip: 10.76.64.0/31
+    virt_router_ip: false
+    virt_ip: false
+    description: Link-to-p1-Leaf-1
+    mtu: 1500
+    enabled: true
+    switchport: false
+
+  - name: Ethernet2
+    ip: 10.76.64.2/31
+    virt_router_ip: false
+    virt_ip: false
+    description: Link-to-p1-Leaf-2
+    mtu: 1500
+    enabled: true
+    switchport: false
+
+  - name: Ethernet3
+    ip: 10.76.64.4/31
+    virt_router_ip: false
+    virt_ip: false
+    description: Link-to-p1-Leaf-3
+    mtu: 1500
+    enabled: false
+    switchport: false
+
+  - name: Ethernet4
+    ip: 10.76.64.6/31
+    virt_router_ip: false
+    virt_ip: false
+    description: Link-to-p1-Leaf-4
+    mtu: 1500
+    enabled: false
+    switchport: false
+
+  - name: loopback0
+    ip: 10.76.64.31/32
+    virt_router_ip: false
+    virt_ip: false
+    description: eBGP-Overlay-to-leaves
+    mtu: false
+    enabled: true
+    switchport: false

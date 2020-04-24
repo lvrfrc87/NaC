@@ -1,0 +1,67 @@
+Vagrant.configure("2") do |config|
+  config.vm.provider "virtualbox" do |vb|
+    vb.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
+  end
+
+VEOS = "vEOS-lab-4.21.1.1F"
+
+  config.vm.define "sp1.arista.ams" do |sp1|
+    sp1.vm.box = VEOS
+    sp1.vm.network :forwarded_port, guest: 22, host: 21201, id: 'ssh'
+    sp1.vm.network :forwarded_port, guest: 80, host: 2180, id: 'http'
+    sp1.vm.network "private_network", virtualbox__intnet: "link_1", ip: "169.254.1.11", auto_config: false
+    sp1.vm.network "private_network", virtualbox__intnet: "link_2", ip: "169.254.2.11", auto_config: false
+    sp1.vm.network "private_network", virtualbox__intnet: "link_3", ip: "169.254.3.11", auto_config: false
+    sp1.vm.network "private_network", virtualbox__intnet: "link_4", ip: "169.254.4.11", auto_config: false
+  end
+
+  config.vm.define "sp2.arista.ams" do |sp2|
+    sp2.vm.box = VEOS
+    sp2.vm.network :forwarded_port, guest: 22, host: 22201, id: 'ssh'
+    sp2.vm.network :forwarded_port, guest: 80, host: 2280, id: 'http'
+    sp2.vm.network "private_network", virtualbox__intnet: "link_5", ip: "169.254.5.21", auto_config: false
+    sp2.vm.network "private_network", virtualbox__intnet: "link_6", ip: "169.254.6.21", auto_config: false
+    sp2.vm.network "private_network", virtualbox__intnet: "link_7", ip: "169.254.7.21", auto_config: false
+    sp2.vm.network "private_network", virtualbox__intnet: "link_8", ip: "169.254.8.21", auto_config: false
+  end
+
+  config.vm.define "lf1.arista.ams" do |lf1|
+    lf1.vm.box = VEOS
+    lf1.vm.network :forwarded_port, guest: 22, host: 23201, id: 'ssh'
+    lf1.vm.network :forwarded_port, guest: 80, host: 2380, id: 'http'
+    lf1.vm.network "private_network", virtualbox__intnet: "link_1", ip: "169.254.1.31", auto_config: false
+    lf1.vm.network "private_network", virtualbox__intnet: "link_5", ip: "169.254.5.31", auto_config: false
+    lf1.vm.network "private_network", virtualbox__intnet: "link_9", ip: "169.254.9.31", auto_config: false
+    lf1.vm.network "private_network", virtualbox__intnet: "link_10", ip: "169.254.10.31", auto_config: false
+  end
+
+  config.vm.define "lf2.arista.ams" do |lf2|
+    lf2.vm.box = VEOS
+    lf2.vm.network :forwarded_port, guest: 22, host: 24201, id: 'ssh'
+    lf2.vm.network :forwarded_port, guest: 80, host: 2480, id: 'http'
+    lf2.vm.network "private_network", virtualbox__intnet: "link_2", ip: "169.254.3.41", auto_config: false
+    lf2.vm.network "private_network", virtualbox__intnet: "link_6", ip: "169.254.6.41", auto_config: false
+    lf2.vm.network "private_network", virtualbox__intnet: "link_9", ip: "169.254.9.41", auto_config: false
+    lf2.vm.network "private_network", virtualbox__intnet: "link_10", ip: "169.254.10.41", auto_config: false
+  end
+
+  config.vm.define "lf3.arista.ams" do |lf3|
+    lf3.vm.box = VEOS
+    lf3.vm.network :forwarded_port, guest: 22, host: 25201, id: 'ssh'
+    lf3.vm.network :forwarded_port, guest: 80, host: 2580, id: 'http'
+    lf3.vm.network "private_network", virtualbox__intnet: "link_3", ip: "169.254.3.51", auto_config: false
+    lf3.vm.network "private_network", virtualbox__intnet: "link_7", ip: "169.254.7.51", auto_config: false
+    lf3.vm.network "private_network", virtualbox__intnet: "link_11", ip: "169.254.11.51", auto_config: false
+    lf3.vm.network "private_network", virtualbox__intnet: "link_12", ip: "169.254.12.51", auto_config: false
+  end
+
+  config.vm.define "lf4.arista.ams" do |lf4|
+    lf4.vm.box = VEOS
+    lf4.vm.network :forwarded_port, guest: 22, host: 26201, id: 'ssh'
+    lf4.vm.network :forwarded_port, guest: 80, host: 2680, id: 'http'
+    lf4.vm.network "private_network", virtualbox__intnet: "link_4", ip: "169.254.4.61", auto_config: false
+    lf4.vm.network "private_network", virtualbox__intnet: "link_8", ip: "169.254.8.61", auto_config: false
+    lf4.vm.network "private_network", virtualbox__intnet: "link_11", ip: "169.254.11.61", auto_config: false
+    lf4.vm.network "private_network", virtualbox__intnet: "link_12", ip: "169.254.12.61", auto_config: false
+  end
+end

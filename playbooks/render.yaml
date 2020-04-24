@@ -1,0 +1,48 @@
+- hosts: demo_replace
+  gather_facts: false
+  connection: local
+
+  tasks:
+    - name: //--RENDER CONFIG--//
+      local_action: template src="./templates/demo.j2" dest="./files/{{ inventory_hostname }}.cfg"
+      tags:
+        - cfgrpl
+
+    - name: //--SHOW RENDER CONFIG--//
+      debug: msg="{{ lookup('file', './files/{{ inventory_hostname }}.cfg') }}"
+      tags:
+        - cfgrpl
+
+    - name: //--CHECK DIFF--//
+      napalm_install_config:
+        config_file: './files/{{ inventory_hostname }}.cfg'
+        commit_changes: False
+        replace_config: True
+        get_diffs: True
+        diff_file: './diff/{{ inventory_hostname }}.diff'
+        provider: "{{ eos_auth }}"
+      register: result
+      tags:
+        - cfgrpl
+
+    - debug:
+        var: result.msg
+      tags:
+        - cfgrpl
+
+    - name: //--LOAD REPLACE CONFIG--//
+      napalm_install_config:
+        config_file: './files/{{ inventory_hostname }}.cfg'
+        commit_changes: True
+        replace_config: True
+        get_diffs: True
+        diff_file: './diff/{{ inventory_hostname }}.diff'
+        provider: "{{ eos_auth }}"
+      register: result
+      tags:
+        - cfgrpl
+
+    - debug:
+        var: result.msg
+      tags:
+        - cfgrpl

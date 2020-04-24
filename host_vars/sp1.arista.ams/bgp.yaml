@@ -1,0 +1,25 @@
+---
+bgp:
+  ASN: 65082
+  addressFamily:
+    ipv4:
+      network:
+        - 10.76.64.31/32
+  redistribute:
+
+  peerGroups:
+    - name: Leaf-1-2-underlay
+      remoteAs: 65083
+      ip:
+        - 10.76.64.1
+        - 10.76.64.3
+      attributes:
+        updateSource:
+        ebgpMultihop:
+        nextHopUnchanged:
+        nextHopSelf:
+        communityExtended: true
+        maxRoutes: 12000
+        allowasIn:
+      af:
+        ipv4: true

@@ -1,0 +1,162 @@
+transceiver qsfp default-mode 4x10G
+!
+service routing protocols model multi-agent
+!
+logging buffered 6553555
+{% for server in syslog -%}
+logging vrf mgmt host {{ server }}
+{% endfor -%}
+logging vrf mgmt source-interface Management1
+!
+hostname {{ inventory_hostname }}
+ip name-server vrf mgmt {{ nameServer }}
+ip domain-name {{ domainName }}
+!
+ntp source {{ ntp.source }}
+{% for server in ntp.servers -%}
+ntp server vrf mgmt {{ server }}
+{% endfor -%}
+!
+{% for community in snmpCommunities -%}
+snmp-server community {{ community }} ro SNMP
+{% endfor -%}
+{% for server in snmp -%}
+snmp-server host {{ server.ip }} version {{ server.version }} {{ server.community }}
+{% endfor -%}
+!
+spanning-tree mode {{ spanning_tree.mode }}
+!
+aaa authorization exec default local
+!
+no aaa root
+!
+{% for user in users -%}
+username {{ user.name }} privilege {{ user.privilege }} role {{ user.role }} secret sha512 {{ user.sha }}
+{% endfor -%}
+!
+{% for vrf in vrfs%}
+vrf definition {{ vrf.name }}
+{% if vrf.rd != false -%}
+rd {{ vrf.rd }}
+{% endif -%}
+!
+{% endfor -%}
+{% for iface in interfaces -%}
+interface {{ iface.name }}
+  {% if 'Management' in iface.name -%}
+  vrf forwarding mgmt
+  {% endif -%}
+  {% if iface.ip != false -%}
+  ip address {{ iface.ip }}
+  {% endif -%}
+  {% if iface.virt_router_ip != false -%}
+  ip virtual-router address {{ iface.virt_router_ip }}
+  {% endif -%}
+  {% if iface.virt_ip != false -%}
+  ip address virtual {{ iface.virt_ip }}
+  {% endif -%}
+  {% if 'loopback' not in iface.name -%}
+  mtu {{ iface.mtu }}
+  {% endif -%}
+  {% if iface.description != false -%}
+  description {{ iface.description }}
+  {% endif -%}
+  {% if 'Ethernet' in iface.name -%}
+  {% if iface.switchport == false -%}
+    no switchport
+  {% elif iface.switchport == true -%}
+    switchport
+  {% endif -%}
+  {% endif -%}
+  {% if iface.enabled == true -%}
+    no shutdown
+  {% elif iface.enabled== false -%}
+    shutdown
+  {% endif -%}
+!
+{% endfor -%}
+!
+{% for rule in acls -%}
+{% for aclName in rule.keys() -%}
+ip access-list standard {{ aclName|upper }}
+    {% for ip in rule.values() -%}
+    {% for entry in ip -%}
+    {% if 'remark' in entry -%}
+    {{ entry }}
+    {% else -%}
+    permit {{ entry }}
+    {% endif -%}
+    {% endfor -%}
+    {% endfor -%}
+{% endfor -%}
+    deny any log
+{% endfor -%}
+!
+ip routing
+{% for vrf in vrfs -%}
+{% if vrf.routing == true -%}
+ip routing vrf {{ vrf.name }}
+{% endif -%}
+{% endfor -%}
+!
+ip ssh client source-interface Management1
+!
+router bgp {{ bgp.ASN }}
+maximum-paths 4 ecmp 4
+{% if bgp.redistribute -%}
+redistribute {{ bgp.redistribute }}
+{% endif -%}
+{% for peer in bgp.peerGroups -%}
+neighbor {{ peer.name }} peer-group
+neighbor {{ peer.name }} remote-as {{ peer.remoteAs }}
+neighbor {{ peer.name }} maximum-routes {{ peer.attributes.maxRoutes }} warning-only
+{% if peer.attributes.updateSource -%}
+neighbor {{ peer.name }} update-source {{ peer.attributes.updateSource }}
+{% endif -%}
+{% if peer.attributes.ebgpMultihop -%}
+neighbor {{ peer.name }} ebgp-multihop {{ peer.attributes.ebgpMultihop }}
+{% endif -%}
+{% if peer.attributes.nextHopUnchanged -%}
+neighbor {{ peer.name }} next-hop-unchanged
+{% endif -%}
+{% if peer.attributes.nextHopSelf -%}
+neighbor {{ peer.name }} next-hop-self
+{% endif -%}
+{% if peer.attributes.communityExtended -%}
+neighbor {{ peer.name }} send-community extended
+{% endif -%}
+{% if peer.attributes.allowasIn -%}
+neighbor {{ peer.name }} allowas-in {{ peer.attributes.allowasIn }}
+{% endif -%}
+{% for ip in peer.ip -%}
+neighbor {{ ip }} peer-group {{ peer.name }}
+{% endfor -%}
+{% endfor -%}
+!
+address-family ipv4
+{% for peer in bgp.peerGroups -%}
+{% if peer.af.ipv4 == true -%}
+neighbor {{ peer.name }} activate
+{% elif peer.af.ipv4 == false -%}
+no neighbor {{ peer.name }} activate
+{% endif -%}
+{% endfor -%}
+{% for net in bgp.addressFamily.ipv4.network -%}
+network {{ net }}
+{% endfor -%}
+!
+management api http-commands
+   protocol http
+   no shutdown
+   !
+   vrf mgmt
+        no shutdown
+!
+management ssh
+   idle-timeout 15
+   authentication mode password
+   !
+   vrf mgmt
+      no shutdown
+!
+end

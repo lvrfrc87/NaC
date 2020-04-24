@@ -1,0 +1,11 @@
+---
+users:
+  - name: admin
+    privilege: 15
+    role: network-admin
+    sha: $6$ruul/uGAT0uuN7Rl$25iPeqRUeNZ5ywIMjV7B4rQgA6fFbRGjk.yCb17kfaI1alSMCUdMUbPaMUsY96vyZC1RZVhJAlqw3kCxj/n3T1
+
+  - name: vagrant
+    privilege: 15
+    role: network-admin
+    sha: $6$0xuNKc5WBI/.pzeq$eVAJAXLFGafmwePkA1jSgAhXfc1774rcYWtWQLbbDihAS1IjxIfL/YOZdJKmH.5asCO2guhz.EOSs9.S6uctw.

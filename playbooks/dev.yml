@@ -1,0 +1,8 @@
+---
+- name: Pipeline playbook test for dev
+  hosts: demo_dev
+  gather_facts: false
+  connection: local
+
+  roles:
+    - role: demo
