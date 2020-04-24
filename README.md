@@ -111,11 +111,11 @@ ntp:
 * Change what required
 * Push the changes using a meaningful comment
 * If DEV pipeline succeed, raise a merge request from DEV to STAGING
-* If STAGING pipeline raise a merge request into MASTER
+* If STAGING pipeline succeed, raise a merge request into MASTER
 
 
 ### PIPELINE STRUCTURE
 
-1. Rember to update the gitlab-ci.yml variables.
-
-![workflow](images/network_config source_control_pipeline.png)
+<p>
+    <img src="images/network_config source_control_pipeline.png" />
+</p>
